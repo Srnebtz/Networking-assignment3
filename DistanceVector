@@ -122,8 +122,12 @@ def distance_vector_round(routers, graph, tables):
                             min_cost = cost
                     new_table[via][dest] = graph[router][via] + min_cost
 
+        if new_table != tables[router]:
+            updated = True
+        new_tables[router] = new_table
 
     return new_tables, updated
+
 
 
 def apply_updates(graph, update_edges):
