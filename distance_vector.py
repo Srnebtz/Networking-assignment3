@@ -96,3 +96,14 @@ if __name__ == "__main__":
         if not updated:
             converged = True
         round_num += 1
+    
+    print("Final Routing Tables:")
+    for router in sorted(routers):
+        print(f"Routing Table of router {router}:")
+        for dest in sorted(routers):
+            if dest == router:
+                continue
+            cost, via = distance_tables[router][dest]
+            cost_str = "INF" if cost == INF else str(cost)
+            print(f"{dest},{cost_str},{via if via else 'INF'}")
+        print()
