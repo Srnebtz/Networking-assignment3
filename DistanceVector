@@ -120,13 +120,17 @@ def distance_vector_round(routers, graph, tables):
                     new_table[via][dest] = graph[router][via]
                 else:
                     cost_to_dest = via_dv.get(dest, INF)
-                    new_table[via][dest] = graph[router][via] + cost_to_dest
+                    if graph[router][via] == INF or cost_to_dest == INF:
+                        new_table[via][dest] = INF
+                    else:
+                        new_table[via][dest] = graph[router][via] + cost_to_dest
 
         if new_table != tables[router]:
             updated = True
         new_tables[router] = new_table
 
     return new_tables, updated
+
 
 
 
