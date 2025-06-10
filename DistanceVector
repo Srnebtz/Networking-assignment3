@@ -98,30 +98,29 @@ def print_routing_table(router_name, dv, next_hop):
 def distance_vector_round(routers, graph, tables):
     updated = False
     new_tables = {}
+
     for router in routers:
         new_table = {}
-        for neighbor in graph[router]:
-            new_table[neighbor] = {}
-            for dest in routers:
-                if dest == neighbor:
-                    new_table[neighbor][dest] = graph[router][neighbor]
-                elif dest == router:
-                    new_table[neighbor][dest] = 0
-                else:
-                    new_table[neighbor][dest] = INF
-        for neighbor in graph[router]:
-            dv_neighbor, _ = compute_distance_vector(tables[neighbor], routers)
-            cost_to_neighbor = graph[router][neighbor]
+        neighbors = sorted(graph[router].keys())
+
+        for via in neighbors:
+            new_table[via] = {}
             for dest in routers:
                 if dest == router:
-                    continue
-                cost = cost_to_neighbor + dv_neighbor.get(dest, INF)
-                if cost < new_table[neighbor][dest]:
-                    new_table[neighbor][dest] = cost
+                    new_table[via][dest] = 0
+                elif dest == via:
+                    new_table[via][dest] = graph[router][via]
+                else:
+                    dv_via, _ = compute_distance_vector(tables[via], routers)
+                    cost_to_via = graph[router][via]
+                    new_table[via][dest] = cost_to_via + dv_via.get(dest, INF)
+
         if new_table != tables[router]:
             updated = True
         new_tables[router] = new_table
+
     return new_tables, updated
+
 
 def apply_updates(graph, update_edges):
     for src, dst, cost in update_edges:
