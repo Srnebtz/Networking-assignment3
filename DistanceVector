@@ -100,39 +100,32 @@ def print_distance_tables(routers, distance_tables, t):
     for router in sorted(routers):
         dests = sorted([d for d in routers if d != router])
         print(f"Distance Table of router {router} at t={t}:")
-        
 
-        print(" ".join(dests))
-        
+        print("     " + "    ".join(dests))
 
-        cost_line = []
-        for d in dests:
-            cost = distance_tables[router][d][0]
-            cost_line.append("INF" if cost == INF else str(cost))
-        print(" ".join(cost_line))
-        
+        for via in dests:
+            row = [via]
+            for dest in dests:
+                cost = distance_tables[router][dest][0] if distance_tables[router][dest][1] == via else INF
+                row.append("INF" if cost == INF else str(cost))
+            print("    ".join(row))
 
-        next_line = []
-        for d in dests:
-            via = distance_tables[router][d][1]
-            next_line.append("INF" if via is None else via)
-        print(" ".join(next_line))
-        
         print()  
 
 
 
 
-def print_routing_tables(routers, distance_tables):
+
+def print_routing_table(routers, distance_tables):
     for router in sorted(routers):
-        dests = sorted([d for d in routers if d != router])
         print(f"Routing Table of router {router}:")
-        for d in dests:
-            cost, via = distance_tables[router][d]
-            cost_str = "INF" if cost == INF else str(cost)
-            via_str = via if via else "INF"
-            print(f"{d},{via_str},{cost_str}")
+        for dest in sorted(routers):
+            if dest != router:
+                cost, via = distance_tables[router][dest]
+                if via is not None and cost != INF:
+                    print(f"{dest},{via},{cost}")
         print()
+
 
 
 
