@@ -47,6 +47,7 @@ def build_graph(routers, topology):
         graph[dst][src] = cost
     return graph
 
+# ✅ 修复的初始化函数
 def initialize_distance_table(router, routers, graph):
     table = {}
     neighbors = sorted(graph[router].keys())
@@ -148,13 +149,12 @@ def main():
     round_num = 0
 
     while True:
-        converged = False
-        while not converged:
-            print(f"t={t}")
+        while True:
             for router in routers:
                 print_distance_table(router, tables[router], t, routers)
-            new_tables, converged = distance_vector_round(routers, graph, tables)
-            converged = not converged
+            new_tables, updated = distance_vector_round(routers, graph, tables)
+            if not updated:
+                break
             tables = new_tables
             t += 1
 
@@ -163,7 +163,7 @@ def main():
             print_routing_table(router, dv, nh)
 
         if round_num < len(updates):
-            print(f"Processing Update {round_num + 1}")
+            print(f"\nProcessing Update {round_num + 1}")
             apply_updates(graph, updates[round_num])
             tables = {router: initialize_distance_table(router, routers, graph) for router in routers}
             round_num += 1
