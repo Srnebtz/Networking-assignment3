@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 
-INF = float('inf')
+INF = 999
 
 def read_input():
     routers = []
@@ -100,21 +100,17 @@ def print_distance_tables(routers, distance_tables, t):
     for router in sorted(routers):
         dests = sorted([d for d in routers if d != router])
         print(f"Distance Table of router {router} at t={t}:")
-
         print("     " + "    ".join(dests))
-
         for via in dests:
             row = [via]
             for dest in dests:
-                cost = distance_tables[router][dest][0] if distance_tables[router][dest][1] == via else INF
-                row.append("INF" if cost == INF else str(cost))
+                cost, next_hop = distance_tables[router][dest]
+                if next_hop == via:
+                    row.append(str(cost) if cost != INF else "INF")
+                else:
+                    row.append("INF")
             print("    ".join(row))
-
-        print()  
-
-
-
-
+        print()
 
 def print_routing_table(routers, distance_tables):
     for router in sorted(routers):
