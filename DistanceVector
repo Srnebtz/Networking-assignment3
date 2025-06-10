@@ -96,31 +96,29 @@ def apply_updates(graph, update_edges):
             graph.setdefault(src, {})[dst] = cost
             graph.setdefault(dst, {})[src] = cost
 
-def print_distance_tables(routers, distance_tables, t):
-    for router in sorted(routers):
-        dests = sorted([d for d in routers if d != router])
-        print(f"Distance Table of router {router} at t={t}:")
-        print("     " + "    ".join(dests))
-        for via in dests:
-            row = [via]
-            for dest in dests:
-                cost, next_hop = distance_tables[router][dest]
-                if next_hop == via:
-                    row.append(str(cost) if cost != INF else "INF")
-                else:
-                    row.append("INF")
-            print("    ".join(row))
-        print()
+def print_distance_table(router, t):
+    print(f"Distance Table of router {router.name} at t={t}:")
+    neighbors = sorted(router.distance_table.keys())
+    other_routers = sorted(router.distance_table[neighbors[0]].keys()) if neighbors else []
+    
+    header = "     " + "    ".join(other_routers)
+    print(header)
+    
+    for dest in other_routers:
+        row = [f"{router.distance_table[src][dest] if router.distance_table[src][dest] != INF else 'INF'}"
+               for src in neighbors]
+        print(f"{dest}    " + "    ".join(row))
+    print()
 
-def print_routing_table(routers, distance_tables):
-    for router in sorted(routers):
-        print(f"Routing Table of router {router}:")
-        for dest in sorted(routers):
-            if dest != router:
-                cost, via = distance_tables[router][dest]
-                if via is not None and cost != INF:
-                    print(f"{dest},{via},{cost}")
-        print()
+
+def print_routing_table(router):
+    print(f"Routing Table of router {router.name}:")
+    for dest in sorted(router.routing_table.keys()):
+        next_hop = router.routing_table[dest]
+        cost = router.distance_vector[dest]
+        print(f"{dest},{next_hop},{cost if cost != INF else 'INF'}")
+    print()
+
 
 
 
@@ -135,7 +133,7 @@ if __name__ == "__main__":
         t = 0
         converged = False
         while not converged:
-            print_distance_tables(routers, distance_tables, t)
+            print_distance_table(routers, distance_tables, t)
             distance_tables, updated = distance_vector_step(routers, graph, distance_tables)
             if not updated:
                 converged = True
