@@ -60,12 +60,10 @@ def initialize_distance_table(router, routers, graph):
                 table[via][dest] = INF
     return table
 
-def compute_distance_vector(table, routers, self_name):
+def compute_distance_vector(table, routers):
     dv = {}
     next_hop = {}
     for dest in routers:
-        if dest == self_name:
-            continue
         min_cost = INF
         via_min = None
         for via in sorted(table.keys()):
@@ -80,20 +78,24 @@ def compute_distance_vector(table, routers, self_name):
 def print_distance_table(router_name, table, t):
     print(f"Distance Table of router {router_name} at t={t}:")
     vias = sorted(table.keys())
-    dests = sorted([d for d in next(iter(table.values())).keys() if d != router_name])
+    dests = sorted([r for r in table[vias[0]].keys() if r != router_name])
     header = "     " + "    ".join(dests)
     print(header)
     for via in vias:
         row = f"{via}    "
         for dest in dests:
-            val = table[via][dest]
+            val = table[via].get(dest, INF)
             row += f"{val if val != INF else 'INF'}    "
         print(row.strip())
+
     print()
+
 
 def print_routing_table(router_name, dv, next_hop):
     print(f"Routing Table of router {router_name}:")
     for dest in sorted(dv.keys()):
+        if dest == router_name:
+            continue
         hop = next_hop[dest]
         cost = dv[dest]
         print(f"{dest},{hop},{cost if cost != INF else 'INF'}")
@@ -104,25 +106,26 @@ def distance_vector_round(routers, graph, tables):
     new_tables = {}
 
     for router in routers:
-        table = tables[router]
         new_table = {}
         for neighbor in graph[router]:
-            dv_neighbor, _ = compute_distance_vector(tables[neighbor], routers, neighbor)
+            new_table[neighbor] = {dest: INF for dest in routers}
+            new_table[neighbor][neighbor] = graph[router][neighbor]
+            new_table[neighbor][router] = 0
+
+        for neighbor in graph[router]:
+            dv_neighbor, _ = compute_distance_vector(tables[neighbor], routers)
             cost_to_neighbor = graph[router][neighbor]
             for dest in routers:
                 if dest == router:
                     continue
                 cost = cost_to_neighbor + dv_neighbor.get(dest, INF)
-                if neighbor not in new_table:
-                    new_table[neighbor] = {}
-                new_tables.setdefault(router, {})
-                new_table[neighbor][dest] = cost
-        # Check update
-        for via in new_table:
-            for dest in new_table[via]:
-                if via not in table or dest not in table[via] or new_table[via][dest] != table[via][dest]:
-                    updated = True
+                if cost < new_table[neighbor][dest]:
+                    new_table[neighbor][dest] = cost
+
+        if new_table != tables[router]:
+            updated = True
         new_tables[router] = new_table
+
     return new_tables, updated
 
 def apply_updates(graph, update_edges):
@@ -153,7 +156,7 @@ def main():
             t += 1
 
         for router in routers:
-            dv, nh = compute_distance_vector(tables[router], routers, router)
+            dv, nh = compute_distance_vector(tables[router], routers)
             print_routing_table(router, dv, nh)
 
         if round_num < len(updates):
