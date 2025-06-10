@@ -114,8 +114,6 @@ if __name__ == "__main__":
         round_num = 0
         converged = False
 
-        print(f"Distance Tables after update {update_round if update_round > 0 else 0}:")
-
         while not converged:
             print(f"Distance Tables at t={round_num}")
             for router in sorted(routers):
@@ -136,13 +134,11 @@ if __name__ == "__main__":
         print("Final Routing Tables:")
         for router in sorted(routers):
             print(f"Routing Table of router {router}:")
-            for dest in sorted(routers):
-                if dest == router:
-                    continue
-                cost, via = distance_tables[router][dest]
-                cost_str = "INF" if cost == INF else str(cost)
-                print(f"{dest},{cost_str},{via if via else 'INF'}")
-            print()
+            dests = [d for d in sorted(routers) if d != router]
+            print(" ".join(dests))
+            print(" ".join("INF" if distance_tables[router][d][0] == INF else str(distance_tables[router][d][0]) for d in dests))
+            print(" ".join(distance_tables[router][d][1] if distance_tables[router][d][1] else "INF" for d in dests))
+
 
         if update_round < len(updates):
             apply_updates(graph, updates[update_round])
@@ -150,4 +146,4 @@ if __name__ == "__main__":
             update_round += 1
         else:
             break
-#112233
+
