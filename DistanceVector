@@ -97,21 +97,22 @@ def apply_updates(graph, update_edges):
             graph.setdefault(dst, {})[src] = cost
 
 def print_distance_tables(routers, distance_tables, t):
-    for router in routers:
-        dests = [d for d in routers if d != router]
+    for router in sorted(routers):
+        dests = sorted([d for d in routers if d != router])
         print(f"Distance Table of router {router} at t={t}:")
 
         print(" ".join(dests))
 
         print(" ".join("INF" if distance_tables[router][d][0] == INF else str(distance_tables[router][d][0]) for d in dests))
 
-        print(" ".join(distance_tables[router][d][1] if distance_tables[router][d][1] else "INF" for d in dests))
-        print()
+        print(" ".join("INF" if distance_tables[router][d][1] is None else distance_tables[router][d][1] for d in dests))
+        print() 
+
 
 
 def print_routing_tables(routers, distance_tables):
-    for router in routers:
-        dests = [d for d in routers if d != router]
+    for router in sorted(routers):
+        dests = sorted([d for d in routers if d != router])
         print(f"Routing Table of router {router}:")
         for d in dests:
             cost, via = distance_tables[router][d]
@@ -119,6 +120,7 @@ def print_routing_tables(routers, distance_tables):
             via_str = via if via else "INF"
             print(f"{d},{via_str},{cost_str}")
         print()
+
 
 
 if __name__ == "__main__":
