@@ -48,10 +48,10 @@ def initialize_distance_table(router, routers, graph):
     for via in sorted(graph[router].keys()):
         table[via] = {}
         for dest in routers:
-            if dest == router:
-                table[via][dest] = 0
-            elif dest == via:
+            if dest == via:
                 table[via][dest] = graph[router][via]
+            elif dest == router:
+                table[via][dest] = 0
             else:
                 table[via][dest] = INF
     return table
@@ -100,30 +100,20 @@ def distance_vector_round(routers, graph, tables):
     new_tables = {}
     for router in routers:
         new_table = {}
-        for neighbor in graph[router]:
-            new_table[neighbor] = {}
+        for via in graph[router]:
+            new_table[via] = {}
+            dv_via, _ = compute_distance_vector(tables[via], routers)
             for dest in routers:
-                if dest == router:
-                    new_table[neighbor][dest] = 0
-                elif dest == neighbor:
-                    new_table[neighbor][dest] = graph[router][neighbor]
+                if dest == via:
+                    new_table[via][dest] = graph[router][via]
+                elif dest == router:
+                    new_table[via][dest] = 0
                 else:
-                    new_table[neighbor][dest] = INF
-
-        for neighbor in graph[router]:
-            dv_neighbor, _ = compute_distance_vector(tables[neighbor], routers)
-            cost_to_neighbor = graph[router][neighbor]
-            for dest in routers:
-                if dest == router:
-                    continue
-                cost = cost_to_neighbor + dv_neighbor.get(dest, INF)
-                if cost < new_table[neighbor][dest]:
-                    new_table[neighbor][dest] = cost
-
+                    cost = graph[router][via] + dv_via.get(dest, INF)
+                    new_table[via][dest] = cost
         if new_table != tables[router]:
             updated = True
         new_tables[router] = new_table
-
     return new_tables, updated
 
 def apply_updates(graph, update_edges):
