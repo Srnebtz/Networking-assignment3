@@ -75,11 +75,10 @@ def compute_distance_vector(table, routers):
         next_hop[dest] = via_min
     return dv, next_hop
 
-def print_distance_table(router_name, table, t):
+def print_distance_table(router_name, table, t, routers):
     print(f"Distance Table of router {router_name} at t={t}:")
     vias = sorted(table.keys())
-    # Fix: Always use consistent destination order (alphabetical excluding self)
-    dests = sorted([d for d in table[next(iter(table))] if d != router_name])
+    dests = sorted([d for d in routers if d != router_name])
     header = "     " + "    ".join(dests)
     print(header)
     for via in vias:
