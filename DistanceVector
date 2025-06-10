@@ -40,55 +40,92 @@ def read_input():
 
     return sorted(routers), topology, updates
 
+
 def build_graph(routers, topology):
-    graph = {router: {} for router in routers}
+    graph = {r: {} for r in routers}
     for src, dst, cost in topology:
         graph[src][dst] = cost
         graph[dst][src] = cost
     return graph
 
-def initialize_distance_tables(routers, graph):
-    distance_tables = {}
-    for router in routers:
-        table = {}
-        for target in routers:
-            if router == target:
-                table[target] = (0, router)
-            elif target in graph[router]:
-                table[target] = (graph[router][target], target)
-            else:
-                table[target] = (INF, None)
-        distance_tables[router] = table
-    return distance_tables
 
-def distance_vector_step(routers, graph, distance_tables):
+def initialize_tables(routers, graph):
+    tables = {}
+    for r in routers:
+        table = {}
+        for dst in routers:
+            if r == dst:
+                table[dst] = (0, r)
+            elif dst in graph[r]:
+                table[dst] = (graph[r][dst], dst)
+            else:
+                table[dst] = (INF, None)
+        tables[r] = table
+    return tables
+
+
+def distance_vector_step(routers, graph, tables):
     updated = False
     new_tables = {}
 
-    for router in routers:
-        current_table = distance_tables[router]
-        new_table = current_table.copy()
+    for r in routers:
+        current = tables[r]
+        new_table = current.copy()
 
-        for neighbor in graph[router]:
-            neighbor_table = distance_tables[neighbor]
-            cost_to_neighbor = graph[router][neighbor]
+        for neighbor in graph[r]:
+            neighbor_table = tables[neighbor]
+            to_neighbor = graph[r][neighbor]
 
             for dest in routers:
-                if dest == router:
+                if dest == r:
                     continue
-                neighbor_cost_to_dest, _ = neighbor_table[dest]
-                new_cost = cost_to_neighbor + neighbor_cost_to_dest
+                neighbor_cost, _ = neighbor_table[dest]
+                new_cost = to_neighbor + neighbor_cost
 
                 if new_cost < new_table[dest][0]:
                     new_table[dest] = (new_cost, neighbor)
                     updated = True
 
-        new_tables[router] = new_table
+        new_tables[r] = new_table
 
     return new_tables, updated
 
-def apply_updates(graph, update_edges):
-    for src, dst, cost in update_edges:
+
+def print_distance_tables(routers, tables, t):
+    for r in routers:
+        print(f"Distance Table of router {r} at t={t}:", flush=True)
+        others = [d for d in routers if d != r]
+        header = "     " + "    ".join(others)
+        print(header, flush=True)
+
+        for row in others:
+            cost_row = []
+            hop_row = []
+            for col in others:
+                cost, hop = tables[r][col]
+                cost_str = str(cost) if cost != INF else "INF"
+                hop_str = hop if hop else "INF"
+                cost_row.append(cost_str)
+                hop_row.append(hop_str)
+            print(f"{row}    " + "    ".join(cost_row), flush=True)
+        print(flush=True)
+
+
+def print_routing_tables(routers, tables):
+    for r in routers:
+        print(f"Routing Table of router {r}:", flush=True)
+        for dest in sorted(routers):
+            if dest == r:
+                continue
+            cost, hop = tables[r][dest]
+            cost_str = str(cost) if cost != INF else "INF"
+            hop_str = hop if hop else "INF"
+            print(f"{dest},{hop_str},{cost_str}", flush=True)
+        print(flush=True)
+
+
+def apply_updates(graph, update_list):
+    for src, dst, cost in update_list:
         if cost == -1:
             graph[src].pop(dst, None)
             graph[dst].pop(src, None)
@@ -96,52 +133,22 @@ def apply_updates(graph, update_edges):
             graph.setdefault(src, {})[dst] = cost
             graph.setdefault(dst, {})[src] = cost
 
-def print_distance_tables(routers, distance_tables, t):
-    for router in routers:
-        print(f"Distance Table of router {router} at t={t}:")
-        dests = [d for d in sorted(routers) if d != router]
-        print("     " + "    ".join(dests))
-        for via in dests:
-            row = []
-            for dest in dests:
-                cost = distance_tables[router][dest][0] if distance_tables[router][dest][1] == via else INF
-                row.append("INF" if cost == INF else str(cost))
-            print(f"{via}    " + "    ".join(row))
-        print()
-
-def print_routing_tables(routers, distance_tables):
-    for router in routers:
-        print(f"Routing Table of router {router}:")
-        for dest in sorted(routers):
-            if dest == router:
-                continue
-            cost, next_hop = distance_tables[router][dest]
-            nh = next_hop if next_hop else "INF"
-            c = "INF" if cost == INF else str(cost)
-            print(f"{dest},{nh},{c}")
-        print()
 
 if __name__ == "__main__":
     routers, topology, updates = read_input()
     graph = build_graph(routers, topology)
-    distance_tables = initialize_distance_tables(routers, graph)
+    tables = initialize_tables(routers, graph)
 
-    update_round = 0
-    while True:
+    for round_num, update in enumerate([None] + updates):
         t = 0
         converged = False
         while not converged:
-            print_distance_tables(routers, distance_tables, t)
-            distance_tables, updated = distance_vector_step(routers, graph, distance_tables)
-            if not updated:
+            print_distance_tables(routers, tables, t)
+            tables, changed = distance_vector_step(routers, graph, tables)
+            if not changed:
                 converged = True
             t += 1
-
-        print_routing_tables(routers, distance_tables)
-
-        if update_round < len(updates):
-            apply_updates(graph, updates[update_round])
-            distance_tables = initialize_distance_tables(routers, graph)
-            update_round += 1
-        else:
-            break
+        print_routing_tables(routers, tables)
+        if update:
+            apply_updates(graph, update)
+            tables = initialize_tables(routers, graph)
