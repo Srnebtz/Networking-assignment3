@@ -7,8 +7,10 @@ def read_input():
     routers = []
     topology = []
     updates = []
+
     section = "ROUTERS"
     current_update = []
+
     for line in sys.stdin:
         line = line.strip()
         if line == "START":
@@ -24,6 +26,7 @@ def read_input():
             if current_update:
                 updates.append(current_update)
             break
+
         if section == "ROUTERS":
             routers.append(line)
         elif section == "TOPOLOGY":
@@ -34,6 +37,7 @@ def read_input():
             parts = line.split()
             if len(parts) == 3:
                 current_update.append((parts[0], parts[1], int(parts[2])))
+
     return sorted(routers), topology, updates
 
 def build_graph(routers, topology):
@@ -80,7 +84,7 @@ def print_distance_table(router_name, table, t, routers):
     for via in vias:
         row = f"{via}    "
         for dest in dests:
-            val = table[via].get(dest, INF)
+            val = table[via][dest]
             row += f"{val if val != INF else 'INF'}    "
         print(row.strip())
     print()
@@ -121,7 +125,6 @@ def distance_vector_round(routers, graph, tables):
 
     return new_tables, updated
 
-
 def apply_updates(graph, update_edges):
     for src, dst, cost in update_edges:
         if cost == -1:
@@ -134,9 +137,11 @@ def apply_updates(graph, update_edges):
 def main():
     routers, topology, updates = read_input()
     graph = build_graph(routers, topology)
+
     tables = {router: initialize_distance_table(router, routers, graph) for router in routers}
     t = 0
     round_num = 0
+
     while True:
         while True:
             for router in routers:
@@ -146,9 +151,11 @@ def main():
                 break
             tables = new_tables
             t += 1
+
         for router in routers:
             dv, nh = compute_distance_vector(tables[router], routers)
             print_routing_table(router, dv, nh)
+
         if round_num < len(updates):
             apply_updates(graph, updates[round_num])
             tables = {router: initialize_distance_table(router, routers, graph) for router in routers}
