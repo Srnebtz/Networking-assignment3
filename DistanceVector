@@ -1,151 +1,163 @@
 #!/usr/bin/env python3
 import sys
-import copy
 
-INF = 999
+INF = float('inf')
 
-def parse_input_file(filename):
-    with open(filename, 'r') as f:
-        lines = f.readlines()
+class Router:
+    def __init__(self, name):
+        self.name = name
+        self.neighbors = {}  # neighbor_name -> cost
+        self.distance_table = {}  # dest -> { via -> cost }
+        self.routing_table = {}  # dest -> (next_hop, cost)
+        self.updated = False
 
-    routers = set()
-    topology = {}
-    updates = []
-
-    section = 0
-    for line in lines:
-        line = line.strip()
-        if not line:
-            section += 1
-            continue
-
-        if section == 0:
-            src, dest, cost = line.split()
-            routers.add(src)
-            routers.add(dest)
-            topology.setdefault(src, {})[dest] = int(cost)
-            topology.setdefault(dest, {})[src] = int(cost)
-        else:
-            t, src, dest, cost = line.split()
-            updates.append((int(t), src, dest, int(cost)))
-            routers.add(src)
-            routers.add(dest)
-
-    return sorted(routers), topology, updates
-
-def init_distance_table(routers, topology):
-    distance_tables = {}
-    next_hops = {}
-    for router in routers:
-        table = {}
-        hops = {}
+    def initialize(self, routers):
         for dest in routers:
-            table[dest] = {}
-            hops[dest] = None
+            self.distance_table[dest] = {}
             for via in routers:
-                table[dest][via] = INF
-        table[router][router] = 0
-        for neighbor in topology.get(router, {}):
-            table[neighbor][neighbor] = topology[router][neighbor]
-            hops[neighbor] = neighbor
-        distance_tables[router] = table
-        next_hops[router] = hops
-    return distance_tables, next_hops
+                if dest == via:
+                    if via == self.name:
+                        self.distance_table[dest][via] = 0
+                    elif via in self.neighbors:
+                        self.distance_table[dest][via] = self.neighbors[via]
+                    else:
+                        self.distance_table[dest][via] = INF
+                else:
+                    self.distance_table[dest][via] = INF
+        self.update_routing_table()
 
-def print_distance_table(router, table, routers):
-    print(f"Distance Table of router {router} at t={print_distance_table.time}:")
-    print("     " + "    ".join(r for r in routers if r != router))
-    for dest in routers:
-        if dest == router:
-            continue
-        row = f"{dest}"
-        for via in routers:
-            if via == router:
+    def send_distance_vector(self):
+        return {dest: self.routing_table[dest][1] for dest in self.routing_table}
+
+    def receive_distance_vector(self, from_router, vector):
+        updated = False
+        for dest in vector:
+            cost = vector[dest]
+            new_cost = self.neighbors[from_router] + cost
+            if new_cost < self.distance_table[dest].get(from_router, INF):
+                self.distance_table[dest][from_router] = new_cost
+                updated = True
+        if updated:
+            self.updated = True
+            self.update_routing_table()
+
+    def update_routing_table(self):
+        for dest in self.distance_table:
+            if dest == self.name:
                 continue
-            val = table[dest][via]
-            row += f"    {val if val != INF else 'INF'}"
-        print(row)
-    print()
-print_distance_table.time = 0
+            min_cost = INF
+            next_hop = None
+            for via in self.distance_table[dest]:
+                if self.distance_table[dest][via] < min_cost:
+                    min_cost = self.distance_table[dest][via]
+                    next_hop = via
+            if min_cost < INF:
+                self.routing_table[dest] = (next_hop, min_cost)
 
-def print_routing_table(router, table, routers):
-    print(f"Routing Table of router {router}:")
-    for dest in sorted(routers):
-        if dest == router:
-            continue
-        min_cost = INF
-        next_hop = None
-        for via in routers:
-            if table[dest][via] < min_cost:
-                min_cost = table[dest][via]
-                next_hop = via
-        if min_cost != INF and next_hop is not None:
-            print(f"{dest},{next_hop},{min_cost}")
-    print()
-
-def update_tables(routers, tables):
-    updated = False
-    new_tables = copy.deepcopy(tables)
-    for router in routers:
-        for dest in routers:
-            if dest == router:
+    def print_distance_table(self, t):
+        print(f"Distance Table of router {self.name} at t={t}:")
+        via_list = sorted(self.distance_table[next(iter(self.distance_table))])
+        print("     " + "  ".join(via_list))
+        for dest in sorted(self.distance_table):
+            if dest == self.name:
                 continue
-            for via in routers:
-                if via == router:
-                    continue
-                if tables[router][via][via] == INF:
-                    continue
-                cost = tables[router][via][via] + min(tables[via][dest].values())
-                if cost < new_tables[router][dest][via]:
-                    new_tables[router][dest][via] = cost
-                    updated = True
-    return new_tables, updated
+            row = dest
+            for via in via_list:
+                val = self.distance_table[dest].get(via, INF)
+                row += "    " + (str(int(val)) if val != INF else "INF")
+            print(row)
+        print()
 
-def apply_update(topology, update):
-    _, src, dest, cost = update
-    if cost == -1:
-        topology[src].pop(dest, None)
-        topology[dest].pop(src, None)
-    else:
-        topology.setdefault(src, {})[dest] = cost
-        topology.setdefault(dest, {})[src] = cost
+    def print_routing_table(self):
+        print(f"Routing Table of router {self.name}:")
+        for dest in sorted(self.routing_table):
+            next_hop, cost = self.routing_table[dest]
+            print(f"{dest},{next_hop},{int(cost)}")
+        print()
 
-def distance_vector(filename):
-    routers, topology, updates = parse_input_file(filename)
-    tables, _ = init_distance_table(routers, topology)
-
-    t = 0
-    while True:
-        print_distance_table.time = t
-        for router in routers:
-            print_distance_table(router, tables[router], routers)
-
-        tables, updated = update_tables(routers, tables)
-        if not updated:
+def simulate(lines):
+    routers = {}
+    time_step = 0
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line == "EOF":
             break
-        t += 1
+        if line.startswith("topology"):
+            _, src, dst, cost = line.split()
+            cost = int(cost)
+            for node in (src, dst):
+                if node not in routers:
+                    routers[node] = Router(node)
+            routers[src].neighbors[dst] = cost
+            routers[dst].neighbors[src] = cost
+            i += 1
+        elif line.startswith("update"):
+            break
+        else:
+            i += 1
 
-    for router in routers:
-        print_routing_table(router, tables[router], routers)
+    for router in routers.values():
+        router.initialize(routers)
 
-    current_topology = copy.deepcopy(topology)
-    for update in updates:
-        apply_update(current_topology, update)
-        tables, _ = init_distance_table(routers, current_topology)
-        t += 1
-        print_distance_table.time = t
-        while True:
-            for router in routers:
-                print_distance_table(router, tables[router], routers)
-            tables, updated = update_tables(routers, tables)
-            if not updated:
-                break
-            t += 1
-        for router in routers:
-            print_routing_table(router, tables[router], routers)
+    print_tables(routers, time_step)
 
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("Usage: python DistanceVector.py <input_file>")
-        sys.exit(1)
-    distance_vector(sys.argv[1])
+    converged = False
+    while not converged:
+        time_step += 1
+        updates = []
+        for r in routers:
+            vector = routers[r].send_distance_vector()
+            for neighbor in routers[r].neighbors:
+                updates.append((neighbor, r, vector))
+        for recv, sender, vector in updates:
+            routers[recv].receive_distance_vector(sender, vector)
+        for r in routers:
+            routers[r].updated = False
+        print_tables(routers, time_step)
+        converged = all(not routers[r].updated for r in routers)
+
+    for r in sorted(routers):
+        routers[r].print_routing_table()
+
+    # Handle dynamic link cost changes
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith("update"):
+            _, src, dst, cost = line.split()
+            cost = int(cost)
+            routers[src].neighbors[dst] = cost
+            routers[dst].neighbors[src] = cost
+            for router in routers.values():
+                router.initialize(routers)
+            time_step += 1
+            converged = False
+            while not converged:
+                time_step += 1
+                updates = []
+                for r in routers:
+                    vector = routers[r].send_distance_vector()
+                    for neighbor in routers[r].neighbors:
+                        updates.append((neighbor, r, vector))
+                for recv, sender, vector in updates:
+                    routers[recv].receive_distance_vector(sender, vector)
+                for r in routers:
+                    routers[r].updated = False
+                print_tables(routers, time_step)
+                converged = all(not routers[r].updated for r in routers)
+            for r in sorted(routers):
+                routers[r].print_routing_table()
+        i += 1
+
+def print_tables(routers, t):
+    for r in sorted(routers):
+        routers[r].print_distance_table(t)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        input_file = "sample_input.txt" 
+    else:
+        input_file = sys.argv[1]
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+    simulate(lines)
