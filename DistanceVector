@@ -109,24 +109,23 @@ def distance_vector_round(routers, graph, tables):
 
         for via in neighbors:
             new_table[via] = {}
+            via_dv, _ = compute_distance_vector(tables[via], routers)
+
             for dest in routers:
                 if dest == router:
                     new_table[via][dest] = 0
                 elif dest == via:
                     new_table[via][dest] = graph[router][via]
                 else:
-                    min_cost = INF
-                    for v_via in tables[via]:
-                        cost = tables[via][v_via].get(dest, INF)
-                        if cost < min_cost:
-                            min_cost = cost
-                    new_table[via][dest] = graph[router][via] + min_cost
+                    cost_to_dest_from_via = via_dv.get(dest, INF)
+                    new_table[via][dest] = graph[router][via] + cost_to_dest_from_via
 
         if new_table != tables[router]:
             updated = True
         new_tables[router] = new_table
 
     return new_tables, updated
+
 
 
 
