@@ -1,0 +1,46 @@
+Distance Table of router X at t=0:
+Y Z
+3 9
+Y Z
+
+Distance Table of router Y at t=0:
+X Z
+3 4
+X Z
+
+Distance Table of router Z at t=0:
+X Y
+9 4
+X Y
+
+Distance Table of router X at t=1:
+Y Z
+3 7
+Y Y
+
+Distance Table of router Y at t=1:
+X Z
+3 4
+X Z
+
+Distance Table of router Z at t=1:
+X Y
+7 4
+Y Y
+
+Final Routing Tables:
+Distance Table of router X at t=2:
+Y Z
+3 7
+Y Y
+
+Distance Table of router Y at t=2:
+X Z
+3 4
+X Z
+
+Distance Table of router Z at t=2:
+X Y
+7 4
+Y Y
+

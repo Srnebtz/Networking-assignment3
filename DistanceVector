@@ -115,15 +115,12 @@ if __name__ == "__main__":
         converged = False
 
         while not converged:
-            print(f"Distance Tables at t={round_num}")
             for router in sorted(routers):
                 print(f"Distance Table of router {router} at t={round_num}:")
-                for dest in sorted(routers):
-                    if dest == router:
-                        continue
-                    cost, via = distance_tables[router][dest]
-                    cost_str = "INF" if cost == INF else str(cost)
-                    print(f"{dest} {cost_str} {via if via else 'INF'}")
+                dests = [d for d in sorted(routers) if d != router]
+                print(" ".join(dests))
+                print(" ".join("INF" if distance_tables[router][d][0] == INF else str(distance_tables[router][d][0]) for d in dests))
+                print(" ".join(distance_tables[router][d][1] if distance_tables[router][d][1] else "INF" for d in dests))
                 print()
 
             distance_tables, updated = distance_vector_step(routers, graph, distance_tables)
@@ -131,14 +128,15 @@ if __name__ == "__main__":
                 converged = True
             round_num += 1
 
+
         print("Final Routing Tables:")
         for router in sorted(routers):
-            print(f"Routing Table of router {router}:")
+            print(f"Distance Table of router {router} at t={round_num}:")
             dests = [d for d in sorted(routers) if d != router]
             print(" ".join(dests))
             print(" ".join("INF" if distance_tables[router][d][0] == INF else str(distance_tables[router][d][0]) for d in dests))
             print(" ".join(distance_tables[router][d][1] if distance_tables[router][d][1] else "INF" for d in dests))
-
+            print()  
 
         if update_round < len(updates):
             apply_updates(graph, updates[update_round])
