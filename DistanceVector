@@ -78,8 +78,8 @@ def compute_distance_vector(table, routers):
 
 def print_distance_table(router_name, table, t, routers):
     print(f"Distance Table of router {router_name} at t={t}:")
-    vias = sorted(table.keys())
-    dests = sorted([d for d in routers if d != router_name])
+    vias = [r for r in routers if r in table]  
+    dests = [r for r in routers if r != router_name] 
     print("     " + "    ".join(dests))
     for via in vias:
         row = f"{via}    "
@@ -88,6 +88,7 @@ def print_distance_table(router_name, table, t, routers):
             row += f"{val if val != INF else 'INF'}    "
         print(row.strip())
     print()
+
 
 def print_routing_table(router_name, dv, next_hop):
     print(f"Routing Table of router {router_name}:")
