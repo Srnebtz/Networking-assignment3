@@ -50,6 +50,7 @@ def build_graph(routers, topology):
 def initialize_distance_table(router, routers, graph):
     table = {}
     neighbors = sorted(graph[router].keys())
+
     for via in neighbors:
         table[via] = {}
         for dest in routers:
@@ -59,15 +60,8 @@ def initialize_distance_table(router, routers, graph):
                 table[via][dest] = graph[router][via]
             else:
                 table[via][dest] = INF
-    table[router] = {}
-    for dest in routers:
-        if dest == router:
-            table[router][dest] = 0
-        elif dest in graph[router]:
-            table[router][dest] = graph[router][dest]
-        else:
-            table[router][dest] = INF
     return table
+
 
 
 def compute_distance_vector(table, routers):
