@@ -100,13 +100,26 @@ def print_distance_tables(routers, distance_tables, t):
     for router in sorted(routers):
         dests = sorted([d for d in routers if d != router])
         print(f"Distance Table of router {router} at t={t}:")
+        
 
         print(" ".join(dests))
+        
 
-        print(" ".join("INF" if distance_tables[router][d][0] == INF else str(distance_tables[router][d][0]) for d in dests))
+        cost_line = []
+        for d in dests:
+            cost = distance_tables[router][d][0]
+            cost_line.append("INF" if cost == INF else str(cost))
+        print(" ".join(cost_line))
+        
 
-        print(" ".join("INF" if distance_tables[router][d][1] is None else distance_tables[router][d][1] for d in dests))
-        print() 
+        next_line = []
+        for d in dests:
+            via = distance_tables[router][d][1]
+            next_line.append("INF" if via is None else via)
+        print(" ".join(next_line))
+        
+        print()  
+
 
 
 
