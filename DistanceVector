@@ -84,7 +84,7 @@ def print_distance_table(router_name, table, t, routers):
     for via in vias:
         row = f"{via}    "
         for dest in dests:
-            val = table[via][dest]
+            val = table.get(via, {}).get(dest, INF)
             row += f"{val if val != INF else 'INF'}    "
         print(row.strip())
     print()
@@ -146,7 +146,7 @@ def main():
     while True:
         while True:
             for router in routers:
-                print_distance_table(router, tables[router], t)
+                print_distance_table(router, tables[router], t, routers)
             new_tables, updated = distance_vector_round(routers, graph, tables)
             if not updated:
                 break
