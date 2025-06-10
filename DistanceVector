@@ -145,7 +145,7 @@ if __name__ == "__main__":
                 converged = True
             t += 1
 
-        print_routing_tables(routers, distance_tables)
+        print_routing_table(routers, distance_tables)
 
         if update_round < len(updates):
             apply_updates(graph, updates[update_round])
