@@ -115,15 +115,16 @@ def distance_vector_round(routers, graph, tables):
                 elif dest == via:
                     new_table[via][dest] = graph[router][via]
                 else:
-                    dv_via, _ = compute_distance_vector(tables[via], routers)
-                    cost_to_via = graph[router][via]
-                    new_table[via][dest] = cost_to_via + dv_via.get(dest, INF)
+                    via_dv, _ = compute_distance_vector(tables[via], routers)
+                    cost_to_dest_from_via = via_dv.get(dest, INF)
+                    new_table[via][dest] = graph[router][via] + cost_to_dest_from_via
 
         if new_table != tables[router]:
             updated = True
         new_tables[router] = new_table
 
     return new_tables, updated
+
 
 def apply_updates(graph, update_edges):
     for src, dst, cost in update_edges:
